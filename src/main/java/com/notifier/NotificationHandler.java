@@ -28,6 +28,12 @@ public class NotificationHandler implements RequestHandler<Object, String> {
         LOGGER.info("Expiration Check Lambda Triggered");
 
         List<ExpirationCheck> expiredDomains = checkForExpiration();
+        if(expiredDomains == null) {
+            LOGGER.error("Failed to query records");
+
+            return "{\"error\": \"" + "Failed to query database"  + "\"}";
+        }
+
         List<ExpirationCheck> uniqueExpirations = new ArrayList<>();
 
         for (ExpirationCheck expiration : expiredDomains) {
@@ -52,7 +58,7 @@ public class NotificationHandler implements RequestHandler<Object, String> {
 
                 return "{\"status\": \"SNS notification sent\", \"count\": " + expiredDomains.size() + "}";
             } catch (Exception e) {
-                LOGGER.error("Exception while sending message to SNS ", e);
+                LOGGER.error("Failed to send message to SNS ", e);
 
                 return "{\"error\": \"" + e.getMessage().replace("\"", "'") + "\"}";
             }
@@ -85,6 +91,7 @@ public class NotificationHandler implements RequestHandler<Object, String> {
 
         } catch (Exception e) {
             LOGGER.error("Exception while querying records: ", e);
+            return null;
         }
 
         return expiredDomains;
