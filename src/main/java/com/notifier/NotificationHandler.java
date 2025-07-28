@@ -70,7 +70,6 @@ public class NotificationHandler implements RequestHandler<Object, String> {
     }
 
     private List<ExpirationCheck> checkForExpiration() {
-
         String user = System.getenv("DB_USER");
         String password = System.getenv("DB_PASSWORD");
         String jdbcUrl = System.getenv("DB_URL");
