@@ -7,9 +7,10 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
-import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,8 @@ public class NotificationHandler implements RequestHandler<Object, String> {
 
     @Override
     public String handleRequest(Object input, Context context) {
+        LOGGER.info("Expiration Check Lambda Triggered");
+
         List<ExpirationCheck> expiredDomains = checkForExpiration();
         List<ExpirationCheck> uniqueExpirations = new ArrayList<>();
 
@@ -49,7 +52,7 @@ public class NotificationHandler implements RequestHandler<Object, String> {
 
                 return "{\"status\": \"SNS notification sent\", \"count\": " + expiredDomains.size() + "}";
             } catch (Exception e) {
-                LOGGER.error(e.getMessage());
+                LOGGER.error("Exception while sending message to SNS ", e);
 
                 return "{\"error\": \"" + e.getMessage().replace("\"", "'") + "\"}";
             }
@@ -75,16 +78,13 @@ public class NotificationHandler implements RequestHandler<Object, String> {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                Integer id = rs.getInt("id");
                 String domain = rs.getString("domain");
-                Timestamp ts = rs.getTimestamp("expiration_date");
-                LocalDateTime expirationDate = ts.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
                 expiredDomains.add(new ExpirationCheck(domain));
             }
 
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error("Exception while querying records: ", e);
         }
 
         return expiredDomains;
